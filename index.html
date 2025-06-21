@@ -2,72 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>OpenAI Image Editor</title>
+  <title>AI Photo Editor</title>
   <style>
-    body { font-family: sans-serif; margin: 2em; }
-    label, input, button { margin-top: 1em; display: block; }
-    img { max-width: 100%; margin-top: 1em; }
+    body { font-family: sans-serif; padding: 20px; }
+    img { max-width: 100%; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h2>Edit Photo with OpenAI</h2>
+  <h1>AI Photo Editor</h1>
+  <form id="editorForm">
+    <label>Upload Image (with transparency for edits like object removal):</label><br>
+    <input type="file" name="image" accept="image/png" required><br><br>
 
-  <label>Upload Image (.png, transparent background for best edits)</label>
-  <input type="file" id="imageInput" accept="image/png" />
+    <label>Edit Prompt:</label><br>
+    <input type="text" name="prompt" placeholder="e.g. Add sunglasses to the person" required><br><br>
 
-  <label>Enter Edit Prompt</label>
-  <input type="text" id="promptInput" placeholder="e.g., Add sunglasses to the person" />
+    <button type="submit">Edit Image</button>
+  </form>
 
-  <button onclick="editImage()">Submit</button>
-
-  <div id="result"></div>
+  <div id="result">
+    <img id="editedImage" style="display:none" />
+    <a id="downloadLink" download="edited.png" style="display:none">Download Edited Image</a>
+  </div>
 
   <script>
-    const apiKey = "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";
+    document.getElementById('editorForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
 
-    async function editImage() {
-      const fileInput = document.getElementById("imageInput");
-      const prompt = document.getElementById("promptInput").value;
-      const resultDiv = document.getElementById("result");
+      const response = await fetch('/edit-image', {
+        method: 'POST',
+        body: formData
+      });
 
-      if (!fileInput.files[0] || !prompt) {
-        alert("Please select an image and enter a prompt.");
-        return;
+      const result = await response.json();
+
+      if (result.imageUrl) {
+        const img = document.getElementById('editedImage');
+        img.src = result.imageUrl;
+        img.style.display = 'block';
+
+        const link = document.getElementById('downloadLink');
+        link.href = result.imageUrl;
+        link.style.display = 'inline-block';
+      } else {
+        alert('Error: ' + JSON.stringify(result.error));
       }
-
-      const formData = new FormData();
-      formData.append("image", fileInput.files[0]);
-      formData.append("prompt", prompt);
-      formData.append("n", "1");
-      formData.append("size", "512x512");
-
-      resultDiv.innerHTML = "Editing image... please wait.";
-
-      try {
-        const response = await fetch("https://api.openai.com/v1/images/edits", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: formData
-        });
-
-        const data = await response.json();
-
-        if (data.data && data.data[0]) {
-          const imgUrl = data.data[0].url;
-          resultDiv.innerHTML = `
-            <p>Edited Image:</p>
-            <img src="${imgUrl}" />
-            <a href="${imgUrl}" download="edited.png"><button>Download</button></a>
-          `;
-        } else {
-          resultDiv.innerHTML = `<p>Error: ${JSON.stringify(data)}</p>`;
-        }
-      } catch (error) {
-        resultDiv.innerHTML = `<p>Request failed: ${error}</p>`;
-      }
-    }
+    });
   </script>
 </body>
 </html>
