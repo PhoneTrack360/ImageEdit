@@ -3,53 +3,40 @@
 <head>
   <meta charset="UTF-8" />
   <title>BTC/USDT Predictor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Tailwind -->
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- FontAwesome for icons -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
-  <!-- QR code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-
   <style>
-    .pulse { animation: pulse 1s infinite }
-    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+    .pulse { animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1)}50%{transform:scale(1.1)} }
   </style>
 </head>
-
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
-  <div class="bg-gray-800 rounded-lg p-6 shadow-xl w-full max-w-2xl space-y-6">
+  <div class="bg-gray-800 shadow-lg rounded-lg p-6 w-full max-w-2xl space-y-6">
 
-    <h1 class="text-center text-2xl font-bold">BTC/USDT Predictor</h1>
+    <h1 class="text-2xl font-bold text-center">BTC/USDT Live Predictor</h1>
 
-    <!-- Controls -->
-    <div class="flex justify-between items-center text-sm">
-      <div>
-        Timeframe:
+    <div class="flex justify-between items-center text-sm text-gray-300">
+      <div>Timeframe:
         <select id="timeframe" class="bg-gray-700 rounded px-2 py-1">
-          <option value="1m">1m</option>
-          <option value="5m">5m</option>
-          <option value="15m">15m</option>
+          <option value="1m">1 min</option>
+          <option value="5m">5 min</option>
+          <option value="15m">15 min</option>
         </select>
       </div>
       <div>UTC Time: <span id="utc" class="font-mono"></span></div>
     </div>
 
-    <!-- Live Price -->
     <div class="text-center">
       <div class="text-sm text-gray-300">Live Price</div>
       <div id="price" class="text-4xl font-bold text-green-400">--</div>
     </div>
 
-    <!-- Prev-day High/Low -->
     <div class="text-center text-sm text-gray-300">
-      Prev-Day High: <span id="high">--</span> | Low: <span id="low">--</span>
+      Prev‑Day High: <span id="high">--</span> | Low: <span id="low">--</span>
     </div>
 
-    <!-- Indicators -->
     <div class="grid grid-cols-2 gap-4 text-sm text-gray-200">
       <div>RSI (14): <span id="rsi">--</span></div>
       <div>MACD Hist: <span id="macd">--</span></div>
@@ -57,7 +44,6 @@
       <div>CDV ΔVol: <span id="cdv">--</span></div>
     </div>
 
-    <!-- Prediction -->
     <div class="text-center">
       <div class="text-lg mb-1">Prediction</div>
       <div class="text-2xl font-bold flex items-center justify-center space-x-2">
@@ -65,20 +51,17 @@
       </div>
     </div>
 
-    <!-- Refresh -->
     <div class="text-center">
-      <button id="refreshBtn" class="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+      <button id="refreshBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm">
         <i class="fas fa-sync-alt mr-2"></i>Refresh Prediction
       </button>
     </div>
 
-    <!-- QR Code -->
     <canvas id="qr" class="mx-auto mt-4"></canvas>
-    <div class="text-center text-xs text-gray-400">Donate (QR points to BTC address)</div>
+    <div class="text-center text-xs text-gray-400">Donate (replace with your own address)</div>
   </div>
 
 <script>
-/* Elements */
 const tfSelect = document.getElementById('timeframe');
 const utcEl = document.getElementById('utc');
 const priceEl = document.getElementById('price');
@@ -96,129 +79,84 @@ let candles = [], cdvCurrent = 0, currentPrice = 0;
 let klineSocket = null, tradeSocket = null;
 let timeframe = tfSelect.value;
 
-function ema(arr, p) {
-  const k = 2 / (p + 1); let out = [arr[0]];
-  for (let i = 1; i < arr.length; i++) out.push(arr[i] * k + out[i - 1] * (1 - k));
-  return out;
-}
-function macdCalc(closes) {
-  const e12 = ema(closes, 12), e26 = ema(closes, 26);
-  const macd = e12.map((v, i) => v - (e26[i] ?? v));
-  const sig = ema(macd.slice(26 - 1), 9);
-  const hist = macd.slice(26 - 1).map((v, i) => v - sig[i]);
-  return { hist: hist.at(-1) };
-}
-function rsiCalc(closes, p = 14) {
-  if (closes.length < p + 1) return null;
-  let g = 0, l = 0;
-  for (let i = 1; i <= p; i++) {
-    const d = closes[i] - closes[i - 1]; d >= 0 ? g += d : l -= d;
-  }
-  return 100 - 100 / (1 + (g / l));
-}
-function psarCalc(highs, lows, step = 0.02, max = 0.2) {
-  let psar = lows[0], ep = highs[0], af = step, bull = true;
-  for (let i = 1; i < highs.length; i++) {
-    psar = bull ? psar + af * (ep - psar) : psar - af * (psar - ep);
-    if (bull) {
-      if (lows[i] < psar) { bull = false; psar = ep; ep = lows[i]; af = step; }
-      else if (highs[i] > ep) { ep = highs[i]; af = Math.min(af + step, max); }
-    } else {
-      if (highs[i] > psar) { bull = true; psar = ep; ep = highs[i]; af = step; }
-      else if (lows[i] < ep) { ep = lows[i]; af = Math.min(af + step, max); }
-    }
-  }
-  return psar;
-}
-function setPrediction(state, icon, color) {
-  iconEl.className = `fas ${icon} ${color} ${state !== "Neutral" ? "pulse" : ""}`;
-  textEl.textContent = state;
+function ema(arr,p){const k=2/(p+1);let o=[arr[0]];for(let i=1;i<arr.length;i++)o.push(arr[i]*k+o[i-1]*(1-k));return o;}
+function macdCalc(c){const e12=ema(c,12), e26=ema(c,26);const mac=e12.map((v,i)=>v-(e26[i]??v));const sig=ema(mac.slice(25),9);const hist=mac.slice(25).map((v,i)=>v-sig[i]);return {hist:hist.at(-1)};}
+function rsiCalc(c,p=14){if(c.length<p+1)return null;let g=0,l=0;for(let i=1;i<=p;i++){let d=c[i]-c[i-1];d>=0?g+=d:l-=d;}return 100-100/(1+g/l);}
+function psarCalc(h,l,s=0.02,m=0.2){let ps=l[0],ep=h[0],af=s,b=true;for(let i=1;i<h.length;i++){ps=b?ps+af*(ep-ps):ps-af*(ps-ep);if(b){if(l[i]<ps){b=false;ps=ep;ep=l[i];af=s;}else if(h[i]>ep){ep=h[i];af=Math.min(af+s,m);}} else{if(h[i]>ps){b=true;ps=ep;ep=h[i];af=s;}else if(l[i]<ep){ep=l[i];af=Math.min(af+s,m);}}}return ps;}
+function setPrediction(state, ic, col){
+  iconEl.className=`fas ${ic} ${col} ${state!=="Neutral"?"pulse":""}`;
+  textEl.textContent=state;
 }
 
-function loadPrevDay() {
+function loadPrevDay(){
   fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=2')
-    .then(r => r.json()).then(d => {
-      const prev = d[0];
-      highEl.textContent = parseFloat(prev[2]).toFixed(2);
-      lowEl.textContent = parseFloat(prev[3]).toFixed(2);
+    .then(r=>r.json()).then(d=>{
+      highEl.textContent=parseFloat(d[0][2]).toFixed(2);
+      lowEl.textContent=parseFloat(d[0][3]).toFixed(2);
     });
 }
 
-function openTradeSocket() {
-  if (tradeSocket) tradeSocket.close();
-  tradeSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
-  tradeSocket.onmessage = ev => {
-    const t = JSON.parse(ev.data);
-    const qty = parseFloat(t.q), price = parseFloat(t.p);
-    currentPrice = price;
-    priceEl.textContent = price.toFixed(2);
-    cdvCurrent += (t.m ? -qty : qty);
-    cdvEl.textContent = cdvCurrent.toFixed(3);
+function openTrade(){
+  if(tradeSocket) tradeSocket.close();
+  tradeSocket=new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
+  tradeSocket.onmessage=ev=>{
+    const t=JSON.parse(ev.data);
+    currentPrice=parseFloat(t.p);
+    priceEl.textContent=currentPrice.toFixed(2);
+    cdvCurrent += (t.m ? -parseFloat(t.q) : parseFloat(t.q));
+    cdvEl.textContent=cdvCurrent.toFixed(3);
   };
 }
 
-function openKlineSocket() {
-  if (klineSocket) klineSocket.close();
-  candles = []; cdvCurrent = 0; cdvEl.textContent = '--';
-  setPrediction('Waiting…', '', 'text-gray-400');
-  klineSocket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${timeframe}`);
-  klineSocket.onmessage = ev => {
-    const m = JSON.parse(ev.data); if (!m.k.x) return;
-    const k = m.k;
-    candles.push({ o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v, cdv: cdvCurrent });
-    if (candles.length > 100) candles.shift();
-    cdvCurrent = 0; cdvEl.textContent = '0.000';
-    computeAndDisplayIndicators();
+function openKline(){
+  if(klineSocket) klineSocket.close();
+  candles=[];cdvCurrent=0;cdvEl.textContent='--';
+  setPrediction('Waiting…','','text-gray-400');
+  klineSocket=new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${timeframe}`);
+  klineSocket.onmessage=ev=>{
+    const m=JSON.parse(ev.data);
+    if(!m.k.x) return;
+    candles.push({o:+m.k.o,h:+m.k.h,l:+m.k.l,c:+m.k.c,v:+m.k.v,cdv:cdvCurrent});
+    if(candles.length>100) candles.shift();
+    cdvCurrent=0;
+    if(candles.length>=35) compute();
   };
+  fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${timeframe}&limit=50`)
+    .then(r=>r.json()).then(d=>{
+      candles=d.map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],cdv:0}));
+      if(candles.length>=35) compute();
+    });
 }
 
-function computeAndDisplayIndicators() {
-  if (candles.length < 35) return;
-  const closes = candles.map(c => c.c),
-        highs = candles.map(c => c.h),
-        lows = candles.map(c => c.l),
-        cdv = candles.at(-1).cdv;
-  const rsi = rsiCalc(closes);
-  const macd = macdCalc(closes);
-  const psar = psarCalc(highs, lows);
-  rsiEl.textContent = rsi.toFixed(2);
-  macdEl.textContent = macd.hist.toFixed(3);
-  psarEl.textContent = psar.toFixed(2);
-  cdvEl.textContent = cdv.toFixed(3);
-  const prevHigh = parseFloat(highEl.textContent), prevLow = parseFloat(lowEl.textContent);
-  const nearHigh = currentPrice >= prevHigh * 0.995;
-  const nearLow = currentPrice <= prevLow * 1.005;
-  if (macd.hist > 0 && rsi > 55 && psar < currentPrice && cdv > 0 && nearHigh)
-    setPrediction('Bullish', 'fa-arrow-up', 'text-green-400');
-  else if (macd.hist < 0 && rsi < 45 && psar > currentPrice && cdv < 0 && nearLow)
-    setPrediction('Bearish', 'fa-arrow-down', 'text-red-400');
+function compute(){
+  const c= candles, cls=c.map(x=>x.c), hs=c.map(x=>x.h), ls=c.map(x=>x.l), cd=c.at(-1).cdv;
+  const r=rsiCalc(cls), m=macdCalc(cls), p=psarCalc(hs,ls);
+  rsiEl.textContent=r.toFixed(2);
+  macdEl.textContent=m.hist.toFixed(3);
+  psarEl.textContent=p.toFixed(2);
+  cdvEl.textContent=cd.toFixed(3);
+  const ph=parseFloat(highEl.textContent), pl=parseFloat(lowEl.textContent);
+  const nh=currentPrice>=ph*0.995, nl=currentPrice<=pl*1.005;
+  if(m.hist>0 && r>55 && p<currentPrice && cd>0 && nh)
+    setPrediction('Bullish','fa-arrow-up','text-green-400');
+  else if(m.hist<0 && r<45 && p>currentPrice && cd<0 && nl)
+    setPrediction('Bearish','fa-arrow-down','text-red-400');
   else
-    setPrediction('Neutral', 'fa-minus', 'text-yellow-400');
+    setPrediction('Neutral','fa-minus','text-yellow-400');
 }
 
-tfSelect.addEventListener('change', () => {
-  timeframe = tfSelect.value;
-  openKlineSocket();
+tfSelect.addEventListener('change',()=>{
+  timeframe=tfSelect.value;
+  openKline();
 });
-
-refreshBtn.addEventListener('click', () => {
-  computeAndDisplayIndicators();
-});
-
-function tickUTC() {
-  utcEl.textContent = (new Date).toUTCString().split(' ')[4];
-}
-setInterval(tickUTC, 1000); tickUTC();
-
-new QRious({
-  element: document.getElementById('qr'),
-  value: 'bitcoin:YOUR_BTC_ADDRESS',
-  size: 120
-});
+refreshBtn.addEventListener('click',()=>{if(candles.length>=35)compute();});
+setInterval(()=>{utcEl.textContent=(new Date).toUTCString().split(' ')[4];},1000);
+new QRious({element:document.getElementById('qr'),value:'bitcoin:YOUR_BTC_ADDRESS',size:120});
 
 loadPrevDay();
-openTradeSocket();
-openKlineSocket();
+openTrade();
+openKline();
 </script>
+
 </body>
 </html>
