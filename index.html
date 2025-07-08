@@ -12,12 +12,11 @@
     <h1 class="text-2xl font-bold text-center text-green-400">BTC/USD Live Predictor</h1>
 
     <div class="text-center mt-2">
-      <span class="text-lg">Current Price: <span id="currentPrice" class="font-bold text-yellow-300">--</span></span>
+      Current Price: <span id="currentPrice" class="font-bold text-yellow-300">--</span>
     </div>
 
     <div class="text-center text-sm mt-1 text-gray-300">
-      <span>Change 12h: <span id="change12h" class="font-semibold">--</span></span> |
-      <span>Change 24h: <span id="change24h" class="font-semibold">--</span></span>
+      Change 12h: <span id="change12h">--</span> | Change 24h: <span id="change24h">--</span>
     </div>
 
     <div class="text-center mt-3">
@@ -35,8 +34,8 @@
     </div>
 
     <div class="text-center text-sm text-gray-300 mt-2">
-      <div>Previous High: <span id="high">--</span> | Low: <span id="low">--</span></div>
-      <div>Midday High: <span id="midhigh">--</span> | Low: <span id="midlow">--</span></div>
+      Previous High: <span id="high">--</span> | Low: <span id="low">--</span><br>
+      Midday High: <span id="midhigh">--</span> | Low: <span id="midlow">--</span>
     </div>
 
     <div class="text-center text-lg mt-4">
@@ -57,8 +56,7 @@
   <audio id="bearishSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
-    let candles = [], currentPrice = 0, lastAlert = 0;
-    let price12h = null, price24h = null;
+    let candles = [], currentPrice = 0, lastAlert = 0, price12h = null, price24h = null;
 
     function speak(text) {
       const msg = new SpeechSynthesisUtterance(text);
@@ -67,137 +65,135 @@
     }
 
     function rsiCalc(closes) {
-      let gain = 0, loss = 0;
-      for (let i = 1; i < 15; i++) {
-        const diff = closes[i] - closes[i - 1];
-        if (diff > 0) gain += diff; else loss -= diff;
+      let gain=0, loss=0;
+      for (let i=1; i<=14; i++) {
+        const d=closes[i]-closes[i-1];
+        if (d>0) gain+=d; else loss-=d;
       }
-      const rs = gain / (loss || 1);
-      return 100 - (100 / (1 + rs));
+      const rs = gain/(loss||1);
+      return 100 - 100/(1+rs);
     }
 
     function macdCalc(closes) {
-      const ema = (data, len) => {
-        let k = 2 / (len + 1), ema = data[0];
-        for (let i = 1; i < data.length; i++) ema = data[i] * k + ema * (1 - k);
-        return ema;
+      const ema = (arr, len) => {
+        let k=2/(len+1), e=arr[0];
+        for (let i=1;i<arr.length;i++) e=arr[i]*k + e*(1-k);
+        return e;
       };
-      return ema(closes.slice(-12), 12) - ema(closes.slice(-26), 26);
+      const fast = ema(closes.slice(-12),12), slow=ema(closes.slice(-26),26);
+      return fast - slow;
     }
 
     function psarCalc(highs, lows) {
-      return highs.at(-2) > highs.at(-3) ? lows.at(-2) : highs.at(-2);
-    }
-
-    function updatePercentageChanges() {
-      const change = (oldPrice) => oldPrice ? ((currentPrice - oldPrice) / oldPrice * 100).toFixed(2) : "--";
-      const change12 = change(price12h);
-      const change24 = change(price24h);
-
-      const change12Elem = document.getElementById("change12h");
-      const change24Elem = document.getElementById("change24h");
-
-      change12Elem.textContent = `${change12}%`;
-      change24Elem.textContent = `${change24}%`;
-
-      change12Elem.className = `font-semibold ${change12 > 0 ? 'text-green-400' : 'text-red-400'}`;
-      change24Elem.className = `font-semibold ${change24 > 0 ? 'text-green-400' : 'text-red-400'}`;
+      return highs.at(-2) > highs.at(-3) ? lows.at(-2): highs.at(-2);
     }
 
     function setPrediction(text, icon, color) {
-      document.getElementById('prediction').textContent = text;
-      document.getElementById('prediction').className = `font-bold ${color}`;
-      document.getElementById('pred-icon').className = `fas ${icon} ml-2 ${color}`;
+      const pEl = document.getElementById('prediction');
+      pEl.textContent = text;
+      pEl.className = `font-bold ${color}`;
+      const iEl = document.getElementById('pred-icon');
+      iEl.className = `fas ${icon} ml-2 ${color}`;
     }
 
     function alertOnTouch(price, levels) {
       if (Date.now() - lastAlert < 10000) return;
-      for (let lvl of levels) {
-        if (Math.abs(price - lvl.value) / lvl.value < 0.0005) {
-          document.getElementById(lvl.type === 'bull' ? 'bullishSound' : 'bearishSound').play();
-          speak(`${lvl.type === 'bull' ? 'Bullish' : 'Bearish'} breakout detected at ${lvl.name}`);
+      for (const lvl of levels) {
+        if (Math.abs(price - lvl.value)/lvl.value < 0.0005) {
+          const sound = lvl.type==='bull'?'bullishSound':'bearishSound';
+          document.getElementById(sound).play();
+          speak(`${lvl.type==='bull'?'Bullish':'Bearish'} breakout detected at ${lvl.name}`);
           lastAlert = Date.now();
+          break;
         }
       }
     }
 
+    function updateChangeDisplays() {
+      const fmt = (old) => old!=null ? ((currentPrice-old)/old*100).toFixed(2) : "--";
+      const c12 = fmt(price12h), c24 = fmt(price24h);
+      const e12 = document.getElementById('change12h'), e24 = document.getElementById('change24h');
+      e12.textContent = `${c12}%`; e24.textContent=`${c24}%`;
+      e12.className = c12>=0?'text-green-400':'text-red-400';
+      e24.className = c24>=0?'text-green-400':'text-red-400';
+    }
+
     function compute() {
-      const cls = candles.map(x => x.c), hs = candles.map(x => x.h), ls = candles.map(x => x.l);
-      const rsi = rsiCalc(cls), macd = macdCalc(cls), psar = psarCalc(hs, ls);
-      const cdv = candles.at(-1).cdv || 0;
+      const cls=candles.map(x=>x.c), hs=candles.map(x=>x.h), ls=candles.map(x=>x.l);
+      const rsi=rsiCalc(cls), macd=macdCalc(cls), psar=psarCalc(hs,ls);
+      const cdv = candles.at(-1).cdv||0;
 
-      document.getElementById('rsi').textContent = rsi.toFixed(2);
-      document.getElementById('macd').textContent = macd.toFixed(3);
-      document.getElementById('psar').textContent = psar.toFixed(2);
-      document.getElementById('cdv').textContent = cdv.toFixed(2);
-      document.getElementById('currentPrice').textContent = currentPrice.toFixed(2);
+      ['rsi','macd','psar','cdv','currentPrice'].forEach(id=>{
+        const el = document.getElementById(id);
+        if (el) el.textContent = id==='currentPrice' ? currentPrice.toFixed(2) : (id==='macd'? macd.toFixed(3): id==='cdv' ? cdv.toFixed(2) : rsi.toFixed(2));
+      });
 
-      updatePercentageChanges();
+      updateChangeDisplays();
 
-      const prevHigh = parseFloat(document.getElementById('high').textContent);
-      const prevLow = parseFloat(document.getElementById('low').textContent);
-      const range = prevHigh - prevLow;
-      let bull = 0, bear = 0;
+      const prevH=parseFloat(document.getElementById('high').textContent),
+            prevL=parseFloat(document.getElementById('low').textContent);
+      const now=new Date(), hr=now.getUTCHours(), afternoon=hr>=18;
+      const morning = candles.filter(k => new Date(k.t).getUTCHours()<12);
+      const midH=Math.max(...morning.map(k=>k.h)), midL=Math.min(...morning.map(k=>k.l));
+      document.getElementById('midhigh').textContent = midH.toFixed(2);
+      document.getElementById('midlow').textContent = midL.toFixed(2);
 
-      if (currentPrice > prevHigh * 0.985) bull += 40;
-      if (currentPrice < prevLow * 1.015) bear += 40;
-
-      const morning = candles.filter(k => new Date(k.t).getUTCHours() < 12);
-      const midHigh = Math.max(...morning.map(k => k.h));
-      const midLow = Math.min(...morning.map(k => k.l));
-      document.getElementById('midhigh').textContent = midHigh.toFixed(2);
-      document.getElementById('midlow').textContent = midLow.toFixed(2);
-      if (currentPrice > midHigh) bull += 15;
-      if (currentPrice < midLow) bear += 15;
-
-      if (macd > 0) bull += 10; else bear += 10;
-      if (rsi > 55) bull += 10; else if (rsi < 45) bear += 10;
-      if (cdv > 0) bull += 15; else bear += 15;
+      let bull=0, bear=0;
+      if (currentPrice>prevH*0.985) bull+=40;
+      if (currentPrice<prevL*1.015) bear+=40;
+      if (afternoon) {
+        if (currentPrice>midH) bull+=15;
+        if (currentPrice<midL) bear+=15;
+      }
+      if (macd>0) bull+=10; else bear+=10;
+      if (rsi>55) bull+=10; else if (rsi<45) bear+=10;
+      if (cdv>0) bull+=15; else bear+=15;
 
       alertOnTouch(currentPrice, [
-        { value: prevHigh, name: "Previous High", type: "bull" },
-        { value: prevLow, name: "Previous Low", type: "bear" },
-        { value: midHigh, name: "Midday High", type: "bull" },
-        { value: midLow, name: "Midday Low", type: "bear" },
+        {value:prevH,name:'Previous High',type:'bull'},
+        {value:prevL,name:'Previous Low',type:'bear'},
+        {value:midH,name:'Midday High',type:'bull'},
+        {value:midL,name:'Midday Low',type:'bear'}
       ]);
 
-      if (bull > bear && bull >= 55) setPrediction(`Bullish (${bull}%)`, 'fa-arrow-up', 'text-green-400');
-      else if (bear > bull && bear >= 55) setPrediction(`Bearish (${bear}%)`, 'fa-arrow-down', 'text-red-400');
-      else setPrediction('Neutral', 'fa-minus', 'text-yellow-400');
+      if (bull>bear && bull>=55) setPrediction(`Bullish (${bull}%)`,`fa-arrow-up`,'text-green-400');
+      else if (bear>bull && bear>=55) setPrediction(`Bearish (${bear}%)`,`fa-arrow-down`,'text-red-400');
+      else setPrediction('Neutral','fa-minus','text-yellow-400');
     }
 
     function fetchKlines() {
-      const tf = document.getElementById('timeframe').value;
+      const tf=document.getElementById('timeframe').value;
       fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${tf}&limit=500`)
-        .then(r => r.json())
-        .then(d => {
-          candles = d.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5], cdv: 0 }));
-          let y = new Date(); y.setUTCDate(y.getUTCDate() - 1);
-          const prev = candles.filter(k => new Date(k.t).getUTCDate() === y.getUTCDate());
-          document.getElementById('high').textContent = Math.max(...prev.map(x => x.h)).toFixed(2);
-          document.getElementById('low').textContent = Math.min(...prev.map(x => x.l)).toFixed(2);
+        .then(r=>r.json())
+        .then(d=>{
+          candles = d.map(k => ({t:k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],cdv:0}));
+          const y=new Date(); y.setUTCDate(y.getUTCDate()-1);
+          const prevDay=candles.filter(k=>new Date(k.t).getUTCDate()===y.getUTCDate());
+          if (prevDay.length){
+            const prevH=Math.max(...prevDay.map(x=>x.h)),
+                  prevL=Math.min(...prevDay.map(x=>x.l));
+            document.getElementById('high').textContent=prevH.toFixed(2);
+            document.getElementById('low').textContent=prevL.toFixed(2);
+          }
 
-          // Get 12h & 24h ago prices
-          const now = Date.now();
-          const twelveH = candles.find(c => now - c.t >= 12 * 3600 * 1000);
-          const twentyFourH = candles.find(c => now - c.t >= 24 * 3600 * 1000);
-          if (twelveH) price12h = twelveH.c;
-          if (twentyFourH) price24h = twentyFourH.c;
+          const now=Date.now();
+          const p12=candles.find(k=> now-k.t >=12*3600e3);
+          const p24=candles.find(k=> now-k.t >=24*3600e3);
+          price12h = p12 ? p12.c : null;
+          price24h = p24 ? p24.c : null;
         });
     }
 
-    function refreshData() {
-      fetchKlines();
-    }
+    function refreshData(){ fetchKlines(); }
 
     fetchKlines();
-    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
-    ws.onmessage = e => {
-      const m = JSON.parse(e.data).k;
-      currentPrice = parseFloat(m.c);
-      const cdv = m.v * (m.c - m.o);
-      candles.push({ t: m.t, o: +m.o, h: +m.h, l: +m.l, c: +m.c, v: +m.v, cdv });
-      if (candles.length > 500) candles.shift();
+    const ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
+    ws.onmessage=e=>{
+      const m=JSON.parse(e.data).k;
+      currentPrice = +m.c;
+      const cdv = +m.v*(+m.c - +m.o);
+      candles.push({t:+m.t,o:+m.o,h:+m.h,l:+m.l,c:+m.c,v:+m.v,cdv});
+      if (candles.length>500) candles.shift();
       compute();
     };
   </script>
