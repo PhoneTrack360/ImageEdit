@@ -2,33 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BTC/USD Predictor</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>BTC/USD Enhanced Predictor</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white p-4">
   <div class="max-w-xl mx-auto space-y-4">
-    <h1 class="text-2xl font-bold text-center text-green-400">BTC/USD Timeframe Prediction</h1>
+    <h1 class="text-2xl font-bold text-center text-green-400">BTC/USD Advanced Predictor</h1>
 
     <div class="text-center mt-2">
-      <label for="tf" class="text-sm">Select Timeframe:</label>
-      <select id="tf" onchange="refresh()" class="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1">
-        <option value="1h">1 Hour</option>
-        <option value="4h">4 Hour</option>
-        <option value="1d">1 Day</option>
-      </select>
+      <span>Price: <strong id="price">--</strong></span><br>
+      <span>24h Change: <span id="change24h">--</span></span>
     </div>
 
-    <div class="text-center">
-      <p>Price: <span id="price" class="font-bold text-yellow-300">--</span></p>
-      <p>Change 24h: <span id="change24h">--</span></p>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4 text-sm">
+    <div class="grid grid-cols-2 gap-2 text-sm">
       <div>RSI: <span id="rsi">--</span></div>
       <div>MACD Hist: <span id="macd">--</span></div>
+      <div>CCI: <span id="cci">--</span></div>
+      <div>Momentum: <span id="momentum">--</span></div>
+      <div>Stoch RSI: <span id="stochrsi">--</span></div>
+      <div>Candle: <span id="candle">--</span></div>
       <div>Volume: <span id="volume">--</span></div>
-      <div>Prev High: <span id="prevHigh">--</span> / Low: <span id="prevLow">--</span></div>
+      <div>Prev High/Low: <span id="prevHigh">--</span> / <span id="prevLow">--</span></div>
     </div>
 
     <div class="text-center text-xl mt-4">
@@ -37,9 +32,7 @@
     </div>
 
     <div class="text-center mt-4">
-      <button onclick="refresh()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Refresh
-      </button>
+      <button onclick="refresh()" class="bg-blue-600 px-4 py-2 rounded">Refresh</button>
     </div>
   </div>
 
@@ -47,78 +40,71 @@
   <audio id="bearSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <script>
-    const TAAPI_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjg2Y2Y3YWU4MDZmZjE2NTFlMjhkYWJlIiwiaWF0IjoxNzUxOTcxNzU4LCJleHAiOjMzMjU2NDM1NzU4fQ.pMXqyFoJ0yCQuQjmT7i-66VNBFSQuEqvRi_oJNntWis";
-    const symbol = "BTC/USDT";
-    let prevHigh = null, prevLow = null, lastAlert = 0;
+    const TAAPI = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjg2Y2Y3YWU4MDZmZjE2NTFlMjhkYWJlIiwiaWF0IjoxNzUxOTcxNzU4LCJleHAiOjMzMjU2NDM1NzU4fQ.pMXqyFoJ0yCQuQjmT7i-66VNBFSQuEqvRi_oJNntWis";
+    const sym = "BTC/USDT", interval = "1h";
+    let lastAlert = 0, prevHigh = null, prevLow = null;
 
-    function speak(text) {
-      const u = new SpeechSynthesisUtterance(text);
+    function speak(t) {
+      if (!speechSynthesis) return;
+      let u = new SpeechSynthesisUtterance(t);
       u.lang = "en-US"; speechSynthesis.speak(u);
     }
 
-    async function fetchTA(ind, tf) {
-      const url = `https://api.taapi.io/${ind}?secret=${TAAPI_KEY}&exchange=binance&symbol=${symbol}&interval=${tf}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      return data.valueMACDHist ?? data.value ?? null;
+    async function fetchTA(ind) {
+      let url = `https://api.taapi.io/${ind}?secret=${TAAPI}&exchange=binance&symbol=${sym}&interval=${interval}`;
+      let res = await fetch(url), j = await res.json();
+      return j.value ?? j.valueMACDHist ?? j.valueCCI ?? j.valueMomentum ?? j.valueStochRSI ?? j.valueCandle ?? null;
     }
 
-    async function refresh() {
-      const tf = document.getElementById("tf").value;
-      document.getElementById("price").textContent = "...";
+    async function refresh(){
+      document.querySelectorAll('#price,#change24h,#rsi,#macd,#cci,#momentum,#stochrsi,#candle,#volume').forEach(el=> el.textContent='…');
 
-      const ticker = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r => r.json());
-      const price = parseFloat(ticker.lastPrice);
-      const change = parseFloat(ticker.priceChangePercent);
-      document.getElementById("price").textContent = price.toFixed(2);
-      document.getElementById("change24h").textContent = change.toFixed(2) + "%";
-      document.getElementById("change24h").className = change >= 0 ? "text-green-400" : "text-red-400";
+      let tk = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT").then(r=>r.json());
+      let p = +tk.lastPrice, c = +tk.priceChangePercent;
+      document.getElementById('price').textContent = p.toFixed(2);
+      let chE = document.getElementById('change24h');
+      chE.textContent = c.toFixed(2)+'%';
+      chE.className = c>=0?'text-green-400':'text-red-400';
 
-      const [rsi, macd, volume] = await Promise.all([
-        fetchTA("rsi", tf), fetchTA("macd", tf), fetchTA("volume", tf)
+      let [rsi, macd, cci, mom, stoch, candle, vol] = await Promise.all([
+        fetchTA("rsi"), fetchTA("macd"), fetchTA("cci"), fetchTA("momentum"),
+        fetchTA("stochrsi"), fetchTA("candle"), fetchTA("volume")
       ]);
-      document.getElementById("rsi").textContent = rsi?.toFixed(2) ?? "--";
-      document.getElementById("macd").textContent = macd?.toFixed(4) ?? "--";
-      document.getElementById("volume").textContent = volume?.toFixed(0) ?? "--";
 
-      const klines = await fetch("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=2").then(r => r.json());
-      prevHigh = parseFloat(klines[0][2]);
-      prevLow = parseFloat(klines[0][3]);
-      document.getElementById("prevHigh").textContent = prevHigh.toFixed(2);
-      document.getElementById("prevLow").textContent = prevLow.toFixed(2);
+      [['rsi',rsi],['macd',macd],['cci',cci],['momentum',mom],['stochrsi',stoch],['candle',candle],['volume',vol]]
+      .forEach(([id,v])=> document.getElementById(id).textContent = v===null?'--': typeof v==='string'? v : v.toFixed(id==='candle'?0: id==='volume'?0:2));
 
-      // === Prediction Logic ===
-      let bull = 0, bear = 0;
-      if (macd > 0) bull += 30; else bear += 30;
-      if (rsi > 55) bull += 20; else if (rsi < 45) bear += 20;
-      if (volume > 0) bull += 10;
-      if (price > prevHigh) { bull += 20; alert(price, prevHigh, "High", "bull"); }
-      if (price < prevLow)  { bear += 20; alert(price, prevLow, "Low", "bear"); }
+      let kl = await fetch("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=2").then(r=>r.json());
+      prevHigh = +kl[0][2]; prevLow = +kl[0][3];
+      document.getElementById('prevHigh').textContent = prevHigh.toFixed(2);
+      document.getElementById('prevLow').textContent  = prevLow.toFixed(2);
 
-      const total = bull + bear;
-      const prob = total > 0 ? Math.abs(bull - bear) / total * 100 : 0;
-      const predictionEl = document.getElementById("prediction");
-      const probabilityEl = document.getElementById("probability");
+      // Scoring
+      let bull=0, bear=0;
+      if (macd>0) bull+=25; else bear+=25;
+      if (rsi>55) bull+=15; else if (rsi<45) bear+=15;
+      if (cci>100) bull+=10; else if (cci<-100) bear+=10;
+      if (mom>0) bull+=10; else bear+=10;
+      if (stoch>0.8) bear+=5; else if(stoch<0.2) bull+=5;
+      if (candle==="DOJI") bear+=5; // caution
+      if (vol>0) bull+=5;
+      if (p>prevHigh) { bull+=20; levelAlert(p,prevHigh,"High","bull"); }
+      if (p<prevLow)  { bear+=20; levelAlert(p,prevLow,"Low","bear"); }
 
-      if (bull > bear && bull >= 50) {
-        predictionEl.textContent = "Bullish";
-        predictionEl.className = "font-bold text-green-400";
-      } else if (bear > bull && bear >= 50) {
-        predictionEl.textContent = "Bearish";
-        predictionEl.className = "font-bold text-red-400";
-      } else {
-        predictionEl.textContent = "Neutral";
-        predictionEl.className = "font-bold text-yellow-400";
-      }
+      let total = bull + bear, prob = total? Math.abs(bull-bear)/total*100 : 0;
+      let pred = 'Neutral', color='text-yellow-400';
+      if(bull>bear && bull>=50){ pred='Bullish'; color='text-green-400';}
+      if(bear>bull && bear>=50){ pred='Bearish'; color='text-red-400';}
 
-      probabilityEl.textContent = prob.toFixed(0) + "%";
+      document.getElementById('prediction').textContent = pred;
+      document.getElementById('prediction').className = 'font-bold ' + color;
+      document.getElementById('probability').textContent = prob.toFixed(0)+'%';
     }
 
-    function alert(price, level, label, type) {
-      if (Math.abs(price - level) / level < 0.002 && Date.now() - lastAlert > 10000) {
-        const audio = document.getElementById(type === "bull" ? "bullSound" : "bearSound");
-        audio.play();
-        speak(`${type === "bull" ? "Bullish" : "Bearish"} breakout at previous ${label}`);
+    function levelAlert(price, lvl, name, type){
+      if(Math.abs(price-lvl)/lvl<0.002 && Date.now()-lastAlert>10000){
+        document.getElementById(type==="bull"?"bullSound":"bearSound").play();
+        speak(`${type==="bull"?"Bullish":"Bearish"} breakout at previous ${name}`);
         lastAlert = Date.now();
       }
     }
