@@ -2,53 +2,223 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AI Photo Editor</title>
+  <title>BTC/USDT Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome for icons -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+  <!-- QR code -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    img { max-width: 100%; margin-top: 20px; }
+    .pulse { animation: pulse 1s infinite }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
   </style>
 </head>
-<body>
-  <h1>AI Photo Editor</h1>
-  <form id="editorForm">
-    <label>Upload Image (with transparency for edits like object removal):</label><br>
-    <input type="file" name="image" accept="image/png" required><br><br>
 
-    <label>Edit Prompt:</label><br>
-    <input type="text" name="prompt" placeholder="e.g. Add sunglasses to the person" required><br><br>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+  <div class="bg-gray-800 rounded-lg p-6 shadow-xl w-full max-w-2xl space-y-6">
 
-    <button type="submit">Edit Image</button>
-  </form>
+    <h1 class="text-center text-2xl font-bold">BTC/USDT Predictor</h1>
 
-  <div id="result">
-    <img id="editedImage" style="display:none" />
-    <a id="downloadLink" download="edited.png" style="display:none">Download Edited Image</a>
+    <!-- Controls -->
+    <div class="flex justify-between items-center text-sm">
+      <div>
+        Timeframe:
+        <select id="timeframe" class="bg-gray-700 rounded px-2 py-1">
+          <option value="1m">1m</option>
+          <option value="5m">5m</option>
+          <option value="15m">15m</option>
+        </select>
+      </div>
+      <div>UTC Time: <span id="utc" class="font-mono"></span></div>
+    </div>
+
+    <!-- Live Price -->
+    <div class="text-center">
+      <div class="text-sm text-gray-300">Live Price</div>
+      <div id="price" class="text-4xl font-bold text-green-400">--</div>
+    </div>
+
+    <!-- Prev-day High/Low -->
+    <div class="text-center text-sm text-gray-300">
+      Prev-Day High: <span id="high">--</span> | Low: <span id="low">--</span>
+    </div>
+
+    <!-- Indicators -->
+    <div class="grid grid-cols-2 gap-4 text-sm text-gray-200">
+      <div>RSI (14): <span id="rsi">--</span></div>
+      <div>MACD Hist: <span id="macd">--</span></div>
+      <div>Parabolic SAR: <span id="psar">--</span></div>
+      <div>CDV ΔVol: <span id="cdv">--</span></div>
+    </div>
+
+    <!-- Prediction -->
+    <div class="text-center">
+      <div class="text-lg mb-1">Prediction</div>
+      <div class="text-2xl font-bold flex items-center justify-center space-x-2">
+        <i id="signal-icon"></i><span id="signal-text">Waiting…</span>
+      </div>
+    </div>
+
+    <!-- Refresh -->
+    <div class="text-center">
+      <button id="refreshBtn" class="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+        <i class="fas fa-sync-alt mr-2"></i>Refresh Prediction
+      </button>
+    </div>
+
+    <!-- QR Code -->
+    <canvas id="qr" class="mx-auto mt-4"></canvas>
+    <div class="text-center text-xs text-gray-400">Donate (QR points to BTC address)</div>
   </div>
 
-  <script>
-    document.getElementById('editorForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
+<script>
+/* Elements */
+const tfSelect = document.getElementById('timeframe');
+const utcEl = document.getElementById('utc');
+const priceEl = document.getElementById('price');
+const highEl = document.getElementById('high');
+const lowEl = document.getElementById('low');
+const rsiEl = document.getElementById('rsi');
+const macdEl = document.getElementById('macd');
+const psarEl = document.getElementById('psar');
+const cdvEl = document.getElementById('cdv');
+const iconEl = document.getElementById('signal-icon');
+const textEl = document.getElementById('signal-text');
+const refreshBtn = document.getElementById('refreshBtn');
 
-      const response = await fetch('/edit-image', {
-        method: 'POST',
-        body: formData
-      });
+let candles = [], cdvCurrent = 0, currentPrice = 0;
+let klineSocket = null, tradeSocket = null;
+let timeframe = tfSelect.value;
 
-      const result = await response.json();
+function ema(arr, p) {
+  const k = 2 / (p + 1); let out = [arr[0]];
+  for (let i = 1; i < arr.length; i++) out.push(arr[i] * k + out[i - 1] * (1 - k));
+  return out;
+}
+function macdCalc(closes) {
+  const e12 = ema(closes, 12), e26 = ema(closes, 26);
+  const macd = e12.map((v, i) => v - (e26[i] ?? v));
+  const sig = ema(macd.slice(26 - 1), 9);
+  const hist = macd.slice(26 - 1).map((v, i) => v - sig[i]);
+  return { hist: hist.at(-1) };
+}
+function rsiCalc(closes, p = 14) {
+  if (closes.length < p + 1) return null;
+  let g = 0, l = 0;
+  for (let i = 1; i <= p; i++) {
+    const d = closes[i] - closes[i - 1]; d >= 0 ? g += d : l -= d;
+  }
+  return 100 - 100 / (1 + (g / l));
+}
+function psarCalc(highs, lows, step = 0.02, max = 0.2) {
+  let psar = lows[0], ep = highs[0], af = step, bull = true;
+  for (let i = 1; i < highs.length; i++) {
+    psar = bull ? psar + af * (ep - psar) : psar - af * (psar - ep);
+    if (bull) {
+      if (lows[i] < psar) { bull = false; psar = ep; ep = lows[i]; af = step; }
+      else if (highs[i] > ep) { ep = highs[i]; af = Math.min(af + step, max); }
+    } else {
+      if (highs[i] > psar) { bull = true; psar = ep; ep = highs[i]; af = step; }
+      else if (lows[i] < ep) { ep = lows[i]; af = Math.min(af + step, max); }
+    }
+  }
+  return psar;
+}
+function setPrediction(state, icon, color) {
+  iconEl.className = `fas ${icon} ${color} ${state !== "Neutral" ? "pulse" : ""}`;
+  textEl.textContent = state;
+}
 
-      if (result.imageUrl) {
-        const img = document.getElementById('editedImage');
-        img.src = result.imageUrl;
-        img.style.display = 'block';
-
-        const link = document.getElementById('downloadLink');
-        link.href = result.imageUrl;
-        link.style.display = 'inline-block';
-      } else {
-        alert('Error: ' + JSON.stringify(result.error));
-      }
+function loadPrevDay() {
+  fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=2')
+    .then(r => r.json()).then(d => {
+      const prev = d[0];
+      highEl.textContent = parseFloat(prev[2]).toFixed(2);
+      lowEl.textContent = parseFloat(prev[3]).toFixed(2);
     });
-  </script>
+}
+
+function openTradeSocket() {
+  if (tradeSocket) tradeSocket.close();
+  tradeSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
+  tradeSocket.onmessage = ev => {
+    const t = JSON.parse(ev.data);
+    const qty = parseFloat(t.q), price = parseFloat(t.p);
+    currentPrice = price;
+    priceEl.textContent = price.toFixed(2);
+    cdvCurrent += (t.m ? -qty : qty);
+    cdvEl.textContent = cdvCurrent.toFixed(3);
+  };
+}
+
+function openKlineSocket() {
+  if (klineSocket) klineSocket.close();
+  candles = []; cdvCurrent = 0; cdvEl.textContent = '--';
+  setPrediction('Waiting…', '', 'text-gray-400');
+  klineSocket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${timeframe}`);
+  klineSocket.onmessage = ev => {
+    const m = JSON.parse(ev.data); if (!m.k.x) return;
+    const k = m.k;
+    candles.push({ o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v, cdv: cdvCurrent });
+    if (candles.length > 100) candles.shift();
+    cdvCurrent = 0; cdvEl.textContent = '0.000';
+    computeAndDisplayIndicators();
+  };
+}
+
+function computeAndDisplayIndicators() {
+  if (candles.length < 35) return;
+  const closes = candles.map(c => c.c),
+        highs = candles.map(c => c.h),
+        lows = candles.map(c => c.l),
+        cdv = candles.at(-1).cdv;
+  const rsi = rsiCalc(closes);
+  const macd = macdCalc(closes);
+  const psar = psarCalc(highs, lows);
+  rsiEl.textContent = rsi.toFixed(2);
+  macdEl.textContent = macd.hist.toFixed(3);
+  psarEl.textContent = psar.toFixed(2);
+  cdvEl.textContent = cdv.toFixed(3);
+  const prevHigh = parseFloat(highEl.textContent), prevLow = parseFloat(lowEl.textContent);
+  const nearHigh = currentPrice >= prevHigh * 0.995;
+  const nearLow = currentPrice <= prevLow * 1.005;
+  if (macd.hist > 0 && rsi > 55 && psar < currentPrice && cdv > 0 && nearHigh)
+    setPrediction('Bullish', 'fa-arrow-up', 'text-green-400');
+  else if (macd.hist < 0 && rsi < 45 && psar > currentPrice && cdv < 0 && nearLow)
+    setPrediction('Bearish', 'fa-arrow-down', 'text-red-400');
+  else
+    setPrediction('Neutral', 'fa-minus', 'text-yellow-400');
+}
+
+tfSelect.addEventListener('change', () => {
+  timeframe = tfSelect.value;
+  openKlineSocket();
+});
+
+refreshBtn.addEventListener('click', () => {
+  computeAndDisplayIndicators();
+});
+
+function tickUTC() {
+  utcEl.textContent = (new Date).toUTCString().split(' ')[4];
+}
+setInterval(tickUTC, 1000); tickUTC();
+
+new QRious({
+  element: document.getElementById('qr'),
+  value: 'bitcoin:YOUR_BTC_ADDRESS',
+  size: 120
+});
+
+loadPrevDay();
+openTradeSocket();
+openKlineSocket();
+</script>
 </body>
 </html>
