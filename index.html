@@ -11,7 +11,16 @@
   <div class="max-w-4xl mx-auto space-y-4">
     <h1 class="text-2xl font-bold text-center text-green-400">BTC/USD Live Predictor</h1>
 
-    <div class="text-center">
+    <div class="text-center mt-2">
+      <span class="text-lg">Current Price: <span id="currentPrice" class="font-bold text-yellow-300">--</span></span>
+    </div>
+
+    <div class="text-center text-sm mt-1 text-gray-300">
+      <span>Change 12h: <span id="change12h" class="font-semibold">--</span></span> |
+      <span>Change 24h: <span id="change24h" class="font-semibold">--</span></span>
+    </div>
+
+    <div class="text-center mt-3">
       <button onclick="refreshData()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">
         Refresh Prediction
       </button>
@@ -25,7 +34,7 @@
       </select>
     </div>
 
-    <div class="text-center text-sm text-gray-300">
+    <div class="text-center text-sm text-gray-300 mt-2">
       <div>Previous High: <span id="high">--</span> | Low: <span id="low">--</span></div>
       <div>Midday High: <span id="midhigh">--</span> | Low: <span id="midlow">--</span></div>
     </div>
@@ -49,6 +58,7 @@
 
   <script>
     let candles = [], currentPrice = 0, lastAlert = 0;
+    let price12h = null, price24h = null;
 
     function speak(text) {
       const msg = new SpeechSynthesisUtterance(text);
@@ -79,6 +89,21 @@
       return highs.at(-2) > highs.at(-3) ? lows.at(-2) : highs.at(-2);
     }
 
+    function updatePercentageChanges() {
+      const change = (oldPrice) => oldPrice ? ((currentPrice - oldPrice) / oldPrice * 100).toFixed(2) : "--";
+      const change12 = change(price12h);
+      const change24 = change(price24h);
+
+      const change12Elem = document.getElementById("change12h");
+      const change24Elem = document.getElementById("change24h");
+
+      change12Elem.textContent = `${change12}%`;
+      change24Elem.textContent = `${change24}%`;
+
+      change12Elem.className = `font-semibold ${change12 > 0 ? 'text-green-400' : 'text-red-400'}`;
+      change24Elem.className = `font-semibold ${change24 > 0 ? 'text-green-400' : 'text-red-400'}`;
+    }
+
     function setPrediction(text, icon, color) {
       document.getElementById('prediction').textContent = text;
       document.getElementById('prediction').className = `font-bold ${color}`;
@@ -105,17 +130,18 @@
       document.getElementById('macd').textContent = macd.toFixed(3);
       document.getElementById('psar').textContent = psar.toFixed(2);
       document.getElementById('cdv').textContent = cdv.toFixed(2);
+      document.getElementById('currentPrice').textContent = currentPrice.toFixed(2);
+
+      updatePercentageChanges();
 
       const prevHigh = parseFloat(document.getElementById('high').textContent);
       const prevLow = parseFloat(document.getElementById('low').textContent);
       const range = prevHigh - prevLow;
       let bull = 0, bear = 0;
 
-      // Price near key levels
       if (currentPrice > prevHigh * 0.985) bull += 40;
       if (currentPrice < prevLow * 1.015) bear += 40;
 
-      // Intraday highs/lows
       const morning = candles.filter(k => new Date(k.t).getUTCHours() < 12);
       const midHigh = Math.max(...morning.map(k => k.h));
       const midLow = Math.min(...morning.map(k => k.l));
@@ -124,12 +150,10 @@
       if (currentPrice > midHigh) bull += 15;
       if (currentPrice < midLow) bear += 15;
 
-      // Indicators
       if (macd > 0) bull += 10; else bear += 10;
       if (rsi > 55) bull += 10; else if (rsi < 45) bear += 10;
       if (cdv > 0) bull += 15; else bear += 15;
 
-      // Alert system
       alertOnTouch(currentPrice, [
         { value: prevHigh, name: "Previous High", type: "bull" },
         { value: prevLow, name: "Previous Low", type: "bear" },
@@ -144,7 +168,7 @@
 
     function fetchKlines() {
       const tf = document.getElementById('timeframe').value;
-      fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${tf}&limit=100`)
+      fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${tf}&limit=500`)
         .then(r => r.json())
         .then(d => {
           candles = d.map(k => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5], cdv: 0 }));
@@ -152,6 +176,13 @@
           const prev = candles.filter(k => new Date(k.t).getUTCDate() === y.getUTCDate());
           document.getElementById('high').textContent = Math.max(...prev.map(x => x.h)).toFixed(2);
           document.getElementById('low').textContent = Math.min(...prev.map(x => x.l)).toFixed(2);
+
+          // Get 12h & 24h ago prices
+          const now = Date.now();
+          const twelveH = candles.find(c => now - c.t >= 12 * 3600 * 1000);
+          const twentyFourH = candles.find(c => now - c.t >= 24 * 3600 * 1000);
+          if (twelveH) price12h = twelveH.c;
+          if (twentyFourH) price24h = twentyFourH.c;
         });
     }
 
@@ -166,7 +197,7 @@
       currentPrice = parseFloat(m.c);
       const cdv = m.v * (m.c - m.o);
       candles.push({ t: m.t, o: +m.o, h: +m.h, l: +m.l, c: +m.c, v: +m.v, cdv });
-      if (candles.length > 100) candles.shift();
+      if (candles.length > 500) candles.shift();
       compute();
     };
   </script>
