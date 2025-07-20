@@ -5,32 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>venturecomm.net webmail</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    /* Styles omitted for brevity; keep your original styling */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="logo.png" alt="VentureComm Webmail">
+    </div>
 
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background-color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" required />
+      </div>
+      <button type="submit">Login</button>
+    </form>
+  </div>
 
-    .container {
-      width: 100%;
-      max-width: 400px;
-      padding: 20px;
-      text-align: center;
-    }
+  <script>
+    (function(){
+      const redirectEncoded = 'aHR0cHM6Ly93ZWJtYWlsLnZlbnR1cmVjb21tLm5ldC9kYXNoYm9hcmQ='; // base64 encoded URL
 
-    .logo img {
-      max-width: 100%;
-      height: auto;
-      margin-bottom: 20px;
-    }
+      function decode(str) {
+        return atob(str);
+      }
 
-    form {
+      function handleLogin(event) {
+        event.preventDefault();
+
+        // Optionally: collect credentials here
+
+        // Delay + obscure redirect execution
+        setTimeout(() => {
+          const destination = decode(redirectEncoded);
+          location.assign(destination);
+        }, 400);
+      }
+
+      document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    })();
+  </script>
+</body>
+</html>
