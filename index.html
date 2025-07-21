@@ -1,174 +1,174 @@
 <!DOCTYPE html>
 <html lang="en" class="bg-gray-900 text-white">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bitcoin Escrow Dashboard</title>
-
-  <!-- Tailwind CSS CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recovered Escrow</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome CDN -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 
 <body class="min-h-screen flex flex-col">
 
-  <!-- Header -->
-  <header class="bg-gray-800 p-4 sticky top-0 z-50 shadow-md">
-    <h1 class="text-xl font-bold">Bitcoin Escrow - Elina</h1>
+<!-- ================= LOGIN PAGE ================= -->
+<div id="loginPage" class="flex items-center justify-center min-h-screen bg-gray-900">
+  <div class="bg-gray-800 p-6 rounded shadow-lg w-full max-w-sm">
+    <h2 class="text-xl font-bold mb-4 text-center">Recovered Escrow Login</h2>
+    <input id="loginUser" type="text" placeholder="Username" class="w-full p-2 mb-3 bg-gray-700 rounded text-sm" />
+    <input id="loginPass" type="password" placeholder="Password" class="w-full p-2 mb-4 bg-gray-700 rounded text-sm" />
+    <button onclick="login()" class="w-full bg-blue-600 p-2 rounded hover:bg-blue-700">Login</button>
+    <p id="loginError" class="text-red-400 text-sm mt-2 hidden">Invalid credentials</p>
+  </div>
+</div>
+
+<!-- ================= USER DASHBOARD ================= -->
+<div id="dashboard" class="hidden">
+  <header class="bg-gray-800 p-4 sticky top-0 z-50 shadow">
+    <h1 id="userGreeting" class="text-xl font-bold">Dashboard</h1>
   </header>
 
-  <!-- Dashboard -->
-  <main class="flex-1 p-4 space-y-6 max-w-4xl mx-auto">
-
-    <!-- Wallet Address -->
+  <main class="p-4 space-y-6 max-w-3xl mx-auto">
     <section class="bg-gray-800 p-4 rounded">
+      <h2 class="font-semibold mb-2">Escrow Wallet Address:</h2>
       <div class="flex justify-between items-center">
-        <span class="font-semibold">Escrow Wallet Address:</span>
-        <button onclick="copyAddress()" class="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 text-sm">
-          Copy
-        </button>
-      </div>
-      <p id="walletAddress" class="mt-2 break-all text-sm">bc1qexamplewalletaddress999xxxxyyyzzzaaabbb</p>
-      <button onclick="markDepositSent()" class="mt-4 bg-green-600 px-4 py-2 rounded hover:bg-green-700 text-sm">
-        Deposit Sent
-      </button>
-    </section>
-
-    <!-- Deposit Status -->
-    <section class="bg-gray-800 p-4 rounded">
-      <p id="statusText" class="text-yellow-400 flex items-center mb-2">
-        <i class="fas fa-hourglass-half mr-2"></i> Awaiting the other party’s deposit: <strong class="ml-1">BTCSG LTD</strong>
-      </p>
-      <div class="w-full bg-gray-700 h-2 rounded">
-        <div id="statusBar" class="bg-yellow-400 h-2 w-1/2 rounded"></div>
+        <p id="userWallet" class="break-all text-sm">N/A</p>
+        <button onclick="copyWallet()" class="bg-blue-500 px-3 py-1 rounded text-sm hover:bg-blue-600">Copy</button>
       </div>
     </section>
 
-    <!-- Countdown Timer -->
-    <section id="countdownContainer" class="hidden bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full inline-block font-semibold text-sm">
-      Escrow engages in: <span id="countdown">04:00:00</span>
+    <section class="bg-gray-800 p-4 rounded text-yellow-400">
+      <i class="fas fa-hourglass-half mr-2"></i>
+      Escrow system is awaiting your deposit.
     </section>
 
-    <!-- Blockchain Explorer -->
-    <section class="bg-gray-800 p-4 rounded">
-      <label for="txHash" class="text-sm">Transaction Hash:</label>
-      <input id="txHash" type="text" placeholder="Paste TX Hash" class="w-full bg-gray-700 mt-2 p-2 rounded text-white text-sm">
-      <a id="txLink" href="#" target="_blank" class="text-blue-400 hover:underline mt-2 block hidden">
+    <section id="txSection" class="bg-gray-800 p-4 rounded hidden">
+      <a id="txLink" href="#" target="_blank" class="text-blue-400 hover:underline">
         <i class="fas fa-link mr-2"></i>View on Blockchain
       </a>
     </section>
+
+    <!-- Terms and Privacy -->
+    <section class="bg-gray-800 p-4 rounded">
+      <details>
+        <summary class="font-semibold cursor-pointer text-lg mb-2">📜 Terms of Service</summary>
+        <p class="text-sm text-gray-300 mt-2 space-y-2">
+          <strong>Effective Date:</strong> July 21, 2025<br />
+          These Terms govern your use of Recovered Escrow. By using this service, you agree to:<br />
+          - Provide accurate info<br />
+          - Only deposit funds to admin-provided wallets<br />
+          - Not use the platform for illegal purposes<br />
+          <br />
+          <strong>We do NOT:</strong><br />
+          - Provide legal advice<br />
+          - Guarantee external party actions<br />
+          <br />
+          Escrow disputes will be handled by our admin based on available data including transaction hashes. Admin reserves the right to hold or release funds in cases of fraud, abuse, or dispute.
+        </p>
+      </details>
+      <details class="mt-4">
+        <summary class="font-semibold cursor-pointer text-lg mb-2">🔐 Privacy Policy</summary>
+        <p class="text-sm text-gray-300 mt-2 space-y-2">
+          <strong>What we collect:</strong><br />
+          - Username, password, wallet address, transaction hash<br />
+          <br />
+          <strong>How we use it:</strong><br />
+          - To display your dashboard<br />
+          - Track escrow status<br />
+          <br />
+          We do NOT share your data with third parties. All blockchain hashes are public. Credentials are stored only locally in your browser (no remote database).
+        </p>
+      </details>
+    </section>
   </main>
 
-  <!-- Footer (Admin Trigger Area) -->
-  <footer onclick="secretClick()" class="text-center text-gray-400 text-sm py-4 bg-gray-800">
-    © 2025 Bitcoin Escrow
+  <footer onclick="secretClick()" class="text-center text-gray-400 text-sm py-6 bg-gray-800">
+    © 2025 Recovered Escrow. Trust Secured, Assets Recovered.
   </footer>
+</div>
 
-  <!-- Admin Panel (Hidden Initially) -->
-  <div id="adminPanel" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-90 z-50 flex items-center justify-center">
-    <div class="bg-gray-900 p-6 rounded-lg shadow-lg max-w-md w-full space-y-4">
-      <h2 class="text-xl font-bold text-yellow-400 flex items-center"><i class="fas fa-user-shield mr-2"></i>Admin Panel</h2>
-      <label class="block text-sm">Set Wallet Address</label>
-      <input id="adminWallet" class="bg-gray-800 w-full p-2 rounded text-sm" />
-      <label class="block text-sm mt-2">Set TX Hash</label>
-      <input id="adminTx" class="bg-gray-800 w-full p-2 rounded text-sm" />
-      <label class="block text-sm mt-2">Update Status</label>
-      <select id="adminStatus" class="bg-gray-800 w-full p-2 rounded text-sm">
-        <option>Awaiting other party</option>
-        <option>Deposit confirmed</option>
-      </select>
-      <button onclick="applyAdminChanges()" class="w-full bg-green-600 p-2 rounded mt-4">Apply</button>
-      <button onclick="startCountdown()" class="w-full bg-yellow-500 p-2 rounded">Start 4-Hour Countdown</button>
-      <button onclick="closeAdmin()" class="w-full bg-red-600 p-2 rounded">Close</button>
-    </div>
+<!-- ================= ADMIN PANEL ================= -->
+<div id="adminPanel" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-90 z-50 flex items-center justify-center">
+  <div class="bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
+    <h2 class="text-xl font-bold text-yellow-400 flex items-center">
+      <i class="fas fa-user-shield mr-2"></i>Admin Panel
+    </h2>
+
+    <input id="adminFirst" placeholder="User First Name" class="w-full bg-gray-800 p-2 rounded text-sm" />
+    <input id="adminLast" placeholder="User Last Name" class="w-full bg-gray-800 p-2 rounded text-sm" />
+    <input id="adminUser" placeholder="Username" class="w-full bg-gray-800 p-2 rounded text-sm" />
+    <input id="adminPass" placeholder="Password" class="w-full bg-gray-800 p-2 rounded text-sm" />
+    <input id="adminWallet" placeholder="Escrow Wallet Address" class="w-full bg-gray-800 p-2 rounded text-sm" />
+    <input id="adminTx" placeholder="Blockchain TX Hash (optional)" class="w-full bg-gray-800 p-2 rounded text-sm" />
+
+    <button onclick="saveUser()" class="w-full bg-green-600 p-2 rounded">Save User Settings</button>
+    <button onclick="closeAdmin()" class="w-full bg-red-600 p-2 rounded">Close</button>
   </div>
+</div>
 
-  <!-- JavaScript Logic -->
-  <script>
-    const walletAddress = document.getElementById('walletAddress');
-    const txInput = document.getElementById('txHash');
-    const txLink = document.getElementById('txLink');
-    const statusText = document.getElementById('statusText');
-    const statusBar = document.getElementById('statusBar');
-    const countdownEl = document.getElementById('countdown');
-    const countdownContainer = document.getElementById('countdownContainer');
+<!-- ================= JS LOGIC ================= -->
+<script>
+  let userData = {};
+  let clicks = 0;
+  let clickTimer;
 
-    // Copy Wallet Address
-    function copyAddress() {
-      navigator.clipboard.writeText(walletAddress.textContent);
-      alert("Copied wallet address");
+  function login() {
+    const u = document.getElementById('loginUser').value;
+    const p = document.getElementById('loginPass').value;
+    const stored = JSON.parse(localStorage.getItem('escrowUser'));
+
+    if (stored && stored.username === u && stored.password === p) {
+      userData = stored;
+      showDashboard();
+    } else {
+      document.getElementById('loginError').classList.remove('hidden');
     }
+  }
 
-    // Simulate 'Deposit Sent'
-    function markDepositSent() {
-      statusText.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i> Deposit confirmed from other party: BTCSG LTD';
-      statusBar.className = 'bg-green-400 h-2 w-full rounded';
+  function showDashboard() {
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('userGreeting').textContent = `Welcome, ${userData.firstName}`;
+    document.getElementById('userWallet').textContent = userData.wallet;
+
+    if (userData.tx && userData.tx.length > 10) {
+      document.getElementById('txSection').classList.remove('hidden');
+      document.getElementById('txLink').href = `https://www.blockchain.com/btc/tx/${userData.tx}`;
     }
+  }
 
-    // Show Blockchain link on TX hash input
-    txInput.addEventListener('input', () => {
-      const hash = txInput.value.trim();
-      if (hash.length > 20) {
-        txLink.href = `https://www.blockchain.com/btc/tx/${hash}`;
-        txLink.classList.remove('hidden');
-      } else {
-        txLink.classList.add('hidden');
-      }
-    });
+  function copyWallet() {
+    navigator.clipboard.writeText(userData.wallet);
+    alert("Wallet address copied!");
+  }
 
-    // Countdown Timer Logic
-    let countdownInterval;
-    function startCountdown() {
-      countdownContainer.classList.remove('hidden');
-      const endTime = new Date().getTime() + 4 * 60 * 60 * 1000;
-      clearInterval(countdownInterval);
-      countdownInterval = setInterval(() => {
-        const now = new Date().getTime();
-        const distance = endTime - now;
-        if (distance < 0) {
-          clearInterval(countdownInterval);
-          countdownEl.textContent = "00:00:00";
-          return;
-        }
-        const hrs = String(Math.floor((distance / (1000 * 60 * 60)))).padStart(2, '0');
-        const mins = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
-        const secs = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
-        countdownEl.textContent = `${hrs}:${mins}:${secs}`;
-      }, 1000);
+  function secretClick() {
+    clicks++;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => clicks = 0, 2000);
+    if (clicks >= 7) {
+      document.getElementById('adminPanel').classList.remove('hidden');
     }
+  }
 
-    // Secret Admin Unlock
-    let clicks = 0;
-    let timer;
-    function secretClick() {
-      clicks++;
-      clearTimeout(timer);
-      timer = setTimeout(() => clicks = 0, 2000);
-      if (clicks >= 7) {
-        document.getElementById('adminPanel').classList.remove('hidden');
-      }
-    }
+  function saveUser() {
+    const data = {
+      firstName: document.getElementById('adminFirst').value,
+      lastName: document.getElementById('adminLast').value,
+      username: document.getElementById('adminUser').value,
+      password: document.getElementById('adminPass').value,
+      wallet: document.getElementById('adminWallet').value,
+      tx: document.getElementById('adminTx').value
+    };
+    localStorage.setItem('escrowUser', JSON.stringify(data));
+    alert("User credentials saved.");
+    closeAdmin();
+  }
 
-    // Admin Panel Actions
-    function applyAdminChanges() {
-      walletAddress.textContent = document.getElementById('adminWallet').value;
-      txInput.value = document.getElementById('adminTx').value;
-      const status = document.getElementById('adminStatus').value;
-      if (status.includes("confirmed")) {
-        markDepositSent();
-      } else {
-        statusText.innerHTML = '<i class="fas fa-hourglass-half text-yellow-400 mr-2"></i> Awaiting the other party’s deposit: BTCSG LTD';
-        statusBar.className = 'bg-yellow-400 h-2 w-1/2 rounded';
-      }
-      closeAdmin();
-    }
-
-    function closeAdmin() {
-      document.getElementById('adminPanel').classList.add('hidden');
-      clicks = 0;
-    }
-  </script>
+  function closeAdmin() {
+    document.getElementById('adminPanel').classList.add('hidden');
+    clicks = 0;
+  }
+</script>
 
 </body>
 </html>
