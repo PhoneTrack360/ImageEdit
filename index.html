@@ -1,122 +1,174 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-gray-900 text-white">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Escrow Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitcoin Escrow Dashboard</title>
+
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome CDN -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen font-sans">
-  <header class="p-4 bg-gray-800 flex justify-between items-center">
-    <h1 class="text-xl font-bold">Escrow Dashboard</h1>
-    <div id="user-info" class="text-sm">User: Elina</div>
+
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-gray-800 p-4 sticky top-0 z-50 shadow-md">
+    <h1 class="text-xl font-bold">Bitcoin Escrow - Elina</h1>
   </header>
 
-  <main class="p-6 space-y-6 max-w-3xl mx-auto">
-    
-    <!-- Escrow Wallet Address -->
-    <section>
-      <h2 class="text-lg font-semibold mb-2">Escrow Wallet Address</h2>
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-        <input id="wallet-address" type="text" readonly class="w-full p-2 bg-gray-700 rounded" value="1ExampleBTCWalletAddress12345" />
-        <button onclick="copyWalletAddress()" class="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded flex items-center">
-          <i class="fas fa-copy mr-2"></i> Copy
+  <!-- Dashboard -->
+  <main class="flex-1 p-4 space-y-6 max-w-4xl mx-auto">
+
+    <!-- Wallet Address -->
+    <section class="bg-gray-800 p-4 rounded">
+      <div class="flex justify-between items-center">
+        <span class="font-semibold">Escrow Wallet Address:</span>
+        <button onclick="copyAddress()" class="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 text-sm">
+          Copy
         </button>
       </div>
+      <p id="walletAddress" class="mt-2 break-all text-sm">bc1qexamplewalletaddress999xxxxyyyzzzaaabbb</p>
+      <button onclick="markDepositSent()" class="mt-4 bg-green-600 px-4 py-2 rounded hover:bg-green-700 text-sm">
+        Deposit Sent
+      </button>
     </section>
 
-    <!-- Status -->
-    <section>
-      <h2 class="text-lg font-semibold mb-2">Transaction Status</h2>
-      <div id="status" class="flex items-center space-x-2 text-yellow-400">
-        <i class="fas fa-hourglass-half"></i>
-        <span>Awaiting the other party’s deposit (BTCSG LTD)</span>
+    <!-- Deposit Status -->
+    <section class="bg-gray-800 p-4 rounded">
+      <p id="statusText" class="text-yellow-400 flex items-center mb-2">
+        <i class="fas fa-hourglass-half mr-2"></i> Awaiting the other party’s deposit: <strong class="ml-1">BTCSG LTD</strong>
+      </p>
+      <div class="w-full bg-gray-700 h-2 rounded">
+        <div id="statusBar" class="bg-yellow-400 h-2 w-1/2 rounded"></div>
       </div>
     </section>
 
-    <!-- Blockchain Verification -->
-    <section>
-      <h2 class="text-lg font-semibold mb-2">Transaction Verification</h2>
-      <div class="space-y-2">
-        <input id="tx-hash" type="text" class="w-full p-2 bg-gray-700 rounded" placeholder="Enter transaction hash..." />
-        <button onclick="verifyTx()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded flex items-center">
-          <i class="fas fa-link mr-2"></i> Verify on Blockchain
-        </button>
-        <div id="tx-link" class="mt-2 text-blue-400 underline hidden"></div>
-      </div>
+    <!-- Countdown Timer -->
+    <section id="countdownContainer" class="hidden bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full inline-block font-semibold text-sm">
+      Escrow engages in: <span id="countdown">04:00:00</span>
     </section>
 
-    <!-- Countdown -->
-    <section id="countdown-section" class="hidden">
-      <h2 class="text-lg font-semibold mb-2">Escrow Engagement Countdown</h2>
-      <div class="text-2xl text-green-400 font-mono" id="countdown-timer">04:00:00</div>
+    <!-- Blockchain Explorer -->
+    <section class="bg-gray-800 p-4 rounded">
+      <label for="txHash" class="text-sm">Transaction Hash:</label>
+      <input id="txHash" type="text" placeholder="Paste TX Hash" class="w-full bg-gray-700 mt-2 p-2 rounded text-white text-sm">
+      <a id="txLink" href="#" target="_blank" class="text-blue-400 hover:underline mt-2 block hidden">
+        <i class="fas fa-link mr-2"></i>View on Blockchain
+      </a>
     </section>
-
   </main>
 
-  <!-- Hidden Admin Trigger -->
-  <footer class="p-4 text-center text-sm text-gray-500 cursor-pointer">
-    Tap here 7 times to access admin panel
+  <!-- Footer (Admin Trigger Area) -->
+  <footer onclick="secretClick()" class="text-center text-gray-400 text-sm py-4 bg-gray-800">
+    © 2025 Bitcoin Escrow
   </footer>
 
-  <script>
-    // Admin Trigger
-    let clickCount = 0;
-    let clickTimer;
+  <!-- Admin Panel (Hidden Initially) -->
+  <div id="adminPanel" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-90 z-50 flex items-center justify-center">
+    <div class="bg-gray-900 p-6 rounded-lg shadow-lg max-w-md w-full space-y-4">
+      <h2 class="text-xl font-bold text-yellow-400 flex items-center"><i class="fas fa-user-shield mr-2"></i>Admin Panel</h2>
+      <label class="block text-sm">Set Wallet Address</label>
+      <input id="adminWallet" class="bg-gray-800 w-full p-2 rounded text-sm" />
+      <label class="block text-sm mt-2">Set TX Hash</label>
+      <input id="adminTx" class="bg-gray-800 w-full p-2 rounded text-sm" />
+      <label class="block text-sm mt-2">Update Status</label>
+      <select id="adminStatus" class="bg-gray-800 w-full p-2 rounded text-sm">
+        <option>Awaiting other party</option>
+        <option>Deposit confirmed</option>
+      </select>
+      <button onclick="applyAdminChanges()" class="w-full bg-green-600 p-2 rounded mt-4">Apply</button>
+      <button onclick="startCountdown()" class="w-full bg-yellow-500 p-2 rounded">Start 4-Hour Countdown</button>
+      <button onclick="closeAdmin()" class="w-full bg-red-600 p-2 rounded">Close</button>
+    </div>
+  </div>
 
-    document.querySelector('footer').addEventListener('click', () => {
-      clickCount++;
-      clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => clickCount = 0, 2000);
-      if (clickCount >= 7) {
-        alert("Admin access granted!");
-        window.location.href = "/admin";
+  <!-- JavaScript Logic -->
+  <script>
+    const walletAddress = document.getElementById('walletAddress');
+    const txInput = document.getElementById('txHash');
+    const txLink = document.getElementById('txLink');
+    const statusText = document.getElementById('statusText');
+    const statusBar = document.getElementById('statusBar');
+    const countdownEl = document.getElementById('countdown');
+    const countdownContainer = document.getElementById('countdownContainer');
+
+    // Copy Wallet Address
+    function copyAddress() {
+      navigator.clipboard.writeText(walletAddress.textContent);
+      alert("Copied wallet address");
+    }
+
+    // Simulate 'Deposit Sent'
+    function markDepositSent() {
+      statusText.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i> Deposit confirmed from other party: BTCSG LTD';
+      statusBar.className = 'bg-green-400 h-2 w-full rounded';
+    }
+
+    // Show Blockchain link on TX hash input
+    txInput.addEventListener('input', () => {
+      const hash = txInput.value.trim();
+      if (hash.length > 20) {
+        txLink.href = `https://www.blockchain.com/btc/tx/${hash}`;
+        txLink.classList.remove('hidden');
+      } else {
+        txLink.classList.add('hidden');
       }
     });
 
-    // Copy Wallet Address
-    function copyWalletAddress() {
-      const input = document.getElementById("wallet-address");
-      input.select();
-      document.execCommand("copy");
-      alert("Wallet address copied to clipboard.");
-    }
-
-    // Verify Blockchain Transaction
-    function verifyTx() {
-      const hash = document.getElementById("tx-hash").value.trim();
-      if (hash) {
-        const link = `https://www.blockchain.com/btc/tx/${hash}`;
-        const txLink = document.getElementById("tx-link");
-        txLink.innerHTML = `<a href="${link}" target="_blank">${link}</a>`;
-        txLink.classList.remove("hidden");
-      }
-    }
-
-    // Countdown Timer
-    let countdownStarted = false;
-    function startCountdown(hours = 4) {
-      if (countdownStarted) return;
-      countdownStarted = true;
-
-      document.getElementById("countdown-section").classList.remove("hidden");
-      let time = hours * 3600;
-
-      const timer = setInterval(() => {
-        const hrs = String(Math.floor(time / 3600)).padStart(2, '0');
-        const mins = String(Math.floor((time % 3600) / 60)).padStart(2, '0');
-        const secs = String(time % 60).padStart(2, '0');
-
-        document.getElementById("countdown-timer").textContent = `${hrs}:${mins}:${secs}`;
-        time--;
-
-        if (time < 0) clearInterval(timer);
+    // Countdown Timer Logic
+    let countdownInterval;
+    function startCountdown() {
+      countdownContainer.classList.remove('hidden');
+      const endTime = new Date().getTime() + 4 * 60 * 60 * 1000;
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = endTime - now;
+        if (distance < 0) {
+          clearInterval(countdownInterval);
+          countdownEl.textContent = "00:00:00";
+          return;
+        }
+        const hrs = String(Math.floor((distance / (1000 * 60 * 60)))).padStart(2, '0');
+        const mins = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+        const secs = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
+        countdownEl.textContent = `${hrs}:${mins}:${secs}`;
       }, 1000);
     }
 
-    // For demo: uncomment to start countdown automatically
-    // startCountdown();
+    // Secret Admin Unlock
+    let clicks = 0;
+    let timer;
+    function secretClick() {
+      clicks++;
+      clearTimeout(timer);
+      timer = setTimeout(() => clicks = 0, 2000);
+      if (clicks >= 7) {
+        document.getElementById('adminPanel').classList.remove('hidden');
+      }
+    }
+
+    // Admin Panel Actions
+    function applyAdminChanges() {
+      walletAddress.textContent = document.getElementById('adminWallet').value;
+      txInput.value = document.getElementById('adminTx').value;
+      const status = document.getElementById('adminStatus').value;
+      if (status.includes("confirmed")) {
+        markDepositSent();
+      } else {
+        statusText.innerHTML = '<i class="fas fa-hourglass-half text-yellow-400 mr-2"></i> Awaiting the other party’s deposit: BTCSG LTD';
+        statusBar.className = 'bg-yellow-400 h-2 w-1/2 rounded';
+      }
+      closeAdmin();
+    }
+
+    function closeAdmin() {
+      document.getElementById('adminPanel').classList.add('hidden');
+      clicks = 0;
+    }
   </script>
+
 </body>
 </html>
