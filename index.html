@@ -2,53 +2,121 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>venturecomm.net webmail</title>
-  <style>
-    /* Styles omitted for brevity; keep your original styling */
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Escrow Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
-<body>
-  <div class="container">
-    <div class="logo">
-      <img src="logo.png" alt="VentureComm Webmail">
-    </div>
+<body class="bg-gray-900 text-white min-h-screen font-sans">
+  <header class="p-4 bg-gray-800 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Escrow Dashboard</h1>
+    <div id="user-info" class="text-sm">User: Elina</div>
+  </header>
 
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" required />
+  <main class="p-6 space-y-6 max-w-3xl mx-auto">
+    
+    <!-- Escrow Wallet Address -->
+    <section>
+      <h2 class="text-lg font-semibold mb-2">Escrow Wallet Address</h2>
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <input id="wallet-address" type="text" readonly class="w-full p-2 bg-gray-700 rounded" value="1ExampleBTCWalletAddress12345" />
+        <button onclick="copyWalletAddress()" class="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded flex items-center">
+          <i class="fas fa-copy mr-2"></i> Copy
+        </button>
       </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input id="password" type="password" required />
+    </section>
+
+    <!-- Status -->
+    <section>
+      <h2 class="text-lg font-semibold mb-2">Transaction Status</h2>
+      <div id="status" class="flex items-center space-x-2 text-yellow-400">
+        <i class="fas fa-hourglass-half"></i>
+        <span>Awaiting the other party’s deposit (BTCSG LTD)</span>
       </div>
-      <button type="submit">Login</button>
-    </form>
-  </div>
+    </section>
+
+    <!-- Blockchain Verification -->
+    <section>
+      <h2 class="text-lg font-semibold mb-2">Transaction Verification</h2>
+      <div class="space-y-2">
+        <input id="tx-hash" type="text" class="w-full p-2 bg-gray-700 rounded" placeholder="Enter transaction hash..." />
+        <button onclick="verifyTx()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded flex items-center">
+          <i class="fas fa-link mr-2"></i> Verify on Blockchain
+        </button>
+        <div id="tx-link" class="mt-2 text-blue-400 underline hidden"></div>
+      </div>
+    </section>
+
+    <!-- Countdown -->
+    <section id="countdown-section" class="hidden">
+      <h2 class="text-lg font-semibold mb-2">Escrow Engagement Countdown</h2>
+      <div class="text-2xl text-green-400 font-mono" id="countdown-timer">04:00:00</div>
+    </section>
+
+  </main>
+
+  <!-- Hidden Admin Trigger -->
+  <footer class="p-4 text-center text-sm text-gray-500 cursor-pointer">
+    Tap here 7 times to access admin panel
+  </footer>
 
   <script>
-    (function(){
-      const redirectEncoded = 'aHR0cHM6Ly93ZWJtYWlsLnZlbnR1cmVjb21tLm5ldC9kYXNoYm9hcmQ='; // base64 encoded URL
+    // Admin Trigger
+    let clickCount = 0;
+    let clickTimer;
 
-      function decode(str) {
-        return atob(str);
+    document.querySelector('footer').addEventListener('click', () => {
+      clickCount++;
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => clickCount = 0, 2000);
+      if (clickCount >= 7) {
+        alert("Admin access granted!");
+        window.location.href = "/admin";
       }
+    });
 
-      function handleLogin(event) {
-        event.preventDefault();
+    // Copy Wallet Address
+    function copyWalletAddress() {
+      const input = document.getElementById("wallet-address");
+      input.select();
+      document.execCommand("copy");
+      alert("Wallet address copied to clipboard.");
+    }
 
-        // Optionally: collect credentials here
-
-        // Delay + obscure redirect execution
-        setTimeout(() => {
-          const destination = decode(redirectEncoded);
-          location.assign(destination);
-        }, 400);
+    // Verify Blockchain Transaction
+    function verifyTx() {
+      const hash = document.getElementById("tx-hash").value.trim();
+      if (hash) {
+        const link = `https://www.blockchain.com/btc/tx/${hash}`;
+        const txLink = document.getElementById("tx-link");
+        txLink.innerHTML = `<a href="${link}" target="_blank">${link}</a>`;
+        txLink.classList.remove("hidden");
       }
+    }
 
-      document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    })();
+    // Countdown Timer
+    let countdownStarted = false;
+    function startCountdown(hours = 4) {
+      if (countdownStarted) return;
+      countdownStarted = true;
+
+      document.getElementById("countdown-section").classList.remove("hidden");
+      let time = hours * 3600;
+
+      const timer = setInterval(() => {
+        const hrs = String(Math.floor(time / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((time % 3600) / 60)).padStart(2, '0');
+        const secs = String(time % 60).padStart(2, '0');
+
+        document.getElementById("countdown-timer").textContent = `${hrs}:${mins}:${secs}`;
+        time--;
+
+        if (time < 0) clearInterval(timer);
+      }, 1000);
+    }
+
+    // For demo: uncomment to start countdown automatically
+    // startCountdown();
   </script>
 </body>
 </html>
